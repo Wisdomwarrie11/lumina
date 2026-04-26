@@ -1,0 +1,111 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(resourceData) {
+      return isSignedIn() && resourceData.ownerId == request.auth.uid;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Users ---
+    match /users/{userId} {
+      function isValidUser(data) {
+        return data.uid == userId &&
+               data.name is string && data.name.size() > 0 &&
+               data.email is string &&
+               data.phone is string &&
+               data.gender in ['male', 'female', 'other'] &&
+               data.createdAt is number;
+      }
+      allow get: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming());
+      allow update: if isSignedIn() && request.auth.uid == userId && isValidUser(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone', 'gender', 'isPremium']);
+    }
+
+    // --- Partners ---
+    match /partners/{partnerId} {
+      function isValidPartner(data) {
+        return data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+               data.phone is string && data.phone.size() >= 10 && data.phone.size() <= 20 &&
+               data.ownerId == request.auth.uid &&
+               data.createdAt is number;
+      }
+
+      allow create: if isSignedIn() && isValidPartner(incoming()) && isValidId(partnerId);
+      allow get, list: if isOwner(existing());
+      allow update: if isOwner(existing()) && isValidPartner(incoming()) && 
+                    incoming().diff(existing()).affectedKeys().hasOnly(['name', 'phone']);
+      allow delete: if isOwner(existing());
+    }
+
+    // --- Schedules ---
+    match /schedules/{scheduleId} {
+      function isValidSchedule(data) {
+        return data.partnerId is string &&
+               data.ownerId == request.auth.uid &&
+               data.time.matches('^([01]\\d|2[0-3]):([0-5]\\d)$') &&
+               data.days is list && data.days.size() <= 7 &&
+               data.message is string && data.message.size() <= 1000 &&
+               data.active is bool;
+      }
+
+      allow create: if isSignedIn() && isValidSchedule(incoming()) && isValidId(scheduleId);
+      allow get, list: if isOwner(existing());
+      allow update: if isOwner(existing()) && isValidSchedule(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['time', 'days', 'message', 'active', 'lastSent']);
+      allow delete: if isOwner(existing());
+    }
+
+    // --- Logs ---
+    match /logs/{logId} {
+      function isValidLog(data) {
+        return data.scheduleId is string &&
+               data.ownerId == request.auth.uid &&
+               data.partnerName is string &&
+               data.message is string &&
+               data.sentAt is number &&
+               data.status in ['sent', 'failed'];
+      }
+
+      allow create: if isSignedIn() && isValidLog(incoming()) && isValidId(logId);
+      allow get, list: if isOwner(existing());
+      allow update, delete: if false; // Logs are immutable
+    }
+
+    // --- User Templates ---
+    match /user_templates/{templateId} {
+      function isValidUserTemplate(data) {
+        return data.ownerId == request.auth.uid &&
+               data.category is string && data.category.size() > 0 && data.category.size() <= 64 &&
+               data.text is string && data.text.size() > 0 && data.text.size() <= 2000 &&
+               data.createdAt is number;
+      }
+      allow create: if isSignedIn() && isValidUserTemplate(incoming()) && isValidId(templateId);
+      allow get, list: if isOwner(existing());
+      allow update: if isOwner(existing()) && isValidUserTemplate(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['category', 'text']);
+      allow delete: if isOwner(existing());
+    }
+  }
+}

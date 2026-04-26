@@ -1,0 +1,94 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile information.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "gender": { "type": "string", "enum": ["male", "female", "other"] },
+        "createdAt": { "type": "number" },
+        "isPremium": { "type": "boolean" }
+      },
+      "required": ["uid", "name", "email", "phone", "gender", "createdAt"]
+    },
+    "Partner": {
+      "title": "Partner",
+      "description": "Details of the partners to receive messages.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["name", "phone", "ownerId", "createdAt"]
+    },
+    "Schedule": {
+      "title": "Schedule",
+      "description": "Message schedules for partners.",
+      "type": "object",
+      "properties": {
+        "partnerId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "time": { "type": "string" },
+        "days": { "type": "array", "items": { "type": "integer" } },
+        "message": { "type": "string" },
+        "active": { "type": "boolean" },
+        "lastSent": { "type": "number" }
+      },
+      "required": ["partnerId", "ownerId", "time", "days", "message", "active"]
+    },
+    "MessageLog": {
+      "title": "MessageLog",
+      "description": "Logs of sent messages.",
+      "type": "object",
+      "properties": {
+        "scheduleId": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "partnerName": { "type": "string" },
+        "message": { "type": "string" },
+        "sentAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["sent", "failed"] }
+      },
+      "required": ["scheduleId", "ownerId", "partnerName", "message", "sentAt", "status"]
+    },
+    "UserTemplate": {
+      "title": "UserTemplate",
+      "description": "User created message templates.",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "category": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["ownerId", "category", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Collection of user profiles."
+    },
+    "/partners/{partnerId}": {
+      "schema": "Partner",
+      "description": "Collection of partners."
+    },
+    "/schedules/{scheduleId}": {
+      "schema": "Schedule",
+      "description": "Collection of message schedules."
+    },
+    "/logs/{logId}": {
+      "schema": "MessageLog",
+      "description": "Collection of sent message logs."
+    },
+    "/user_templates/{templateId}": {
+      "schema": "UserTemplate",
+      "description": "Collection of user-defined templates."
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "Lumina Muse",
+  "description": "An all-day romantic companion to schedule heartfelt messages for your partner via WhatsApp. Includes a library of musings, custom categories, and automated delivery reminders.",
+  "requestFramePermissions": [
+    "notifications"
+  ],
+  "majorCapabilities": [
+    "PWA",
+    "Automation",
+    "Messaging"
+  ]
+}
